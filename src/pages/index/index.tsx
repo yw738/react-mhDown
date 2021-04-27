@@ -1,9 +1,11 @@
 import React, { Component, useState, useEffect } from "react";
-import { Button, Tabs, Space, Input, Pagination, Row, Col, Card } from "antd";
+import { Space, Input, Pagination, Row, Col, Card } from "antd";
 import "./index.css";
+import { useHistory } from "react-router-dom";
+
 import { searchApi } from "./../../api/api.js";
+
 const { Search } = Input;
-const { TabPane } = Tabs;
 
 const { Meta } = Card;
 /**
@@ -21,8 +23,6 @@ const SearchCom: React.FC<searchProps> = (props) => {
   const [pageSize] = useState<number>(12);
   const { changeList } = props;
   useEffect(() => {
-    if (searchKey) {
-    }
     searchApi({
       key: searchKey,
       from: pageIndex,
@@ -44,6 +44,7 @@ const SearchCom: React.FC<searchProps> = (props) => {
         style={{ width: 300 }}
         enterButton="Search"
         onSearch={(val: String) => {
+          console.log(val);
           setKey(val);
         }}
       />
@@ -67,7 +68,7 @@ interface contentProps {
 }
 const ContentBox: React.FC<contentProps> = (props) => {
   const { dataList } = props;
-  console.log(dataList);
+  // console.log(dataList);
   let listProp = {
     xs: 12,
     sm: 8,
@@ -80,7 +81,7 @@ const ContentBox: React.FC<contentProps> = (props) => {
       <Row gutter={[20, 20]}>
         {dataList.map((v, index) => (
           <Col {...listProp} key={index}>
-            <List />
+            <List {...v} />
           </Col>
         ))}
       </Row>
@@ -88,13 +89,31 @@ const ContentBox: React.FC<contentProps> = (props) => {
   );
 };
 
-const List: React.FC = () => {
-  useEffect(() => {}, []);
-  // onClick={()=>}
+interface listProps {
+  author: String;
+  cartoonId: String;
+  cartoonType: String;
+  cartoonVariableId: Number;
+  cover: String;
+  creationTime: String;
+  descs: String;
+  id: Number;
+  title: String;
+  updateTime: String;
+  history: Object;
+}
+const List: React.FC<listProps> = (props) => {
+  const history = useHistory();
+  function handleClick() {
+    history.push({
+      pathname: `/list/${props.cartoonId}/${props.title}`,
+    });
+  }
   return (
     <Card
       hoverable
       style={{ width: "100%" }}
+      onClick={handleClick}
       cover={
         <img
           alt="example"
@@ -102,9 +121,20 @@ const List: React.FC = () => {
         />
       }
     >
-      <Meta title="Europe Street beat" description="www.instagram.com" />
+      {/* <Meta title="Europe Street beat" description="www.instagram.com" /> */}
+      <Meta title={props.title} description={props.descs} />
     </Card>
   );
+
+  // return (
+  //   <Card
+  //     hoverable
+  //     style={{ width: "100%" }}
+  //     cover={<img alt="example" src={props.cover as string} />}
+  //   >
+  //     <Meta title={props.title} description={props.descs} />
+  //   </Card>
+  // );
 };
 //类型推断
 /* <类型>值
@@ -133,16 +163,9 @@ class HomePage extends Component {
   render(): React.ReactNode {
     return (
       <div className="padding20">
-        <Tabs defaultActiveKey="2">
-          <TabPane tab="首页" key="1" className="box">
-            <SearchCom changeList={this.changeList}>
-              <ContentBox dataList={this.state.dataList} />
-            </SearchCom>
-          </TabPane>
-          {/* <TabPane tab="列表" key="2">
-            Tab 2
-          </TabPane> */}
-        </Tabs>
+        <SearchCom changeList={this.changeList}>
+          <ContentBox dataList={this.state.dataList} />
+        </SearchCom>
       </div>
     );
   }

@@ -1,0 +1,28 @@
+.site-page-header {
+    border: 1px solid rgb(235, 237, 240);
+}
+
+.padding24 {
+    padding: 24px;
+}
+
+.flexEnd {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.affixClass {
+    /* text-align: right; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px 0;
+}
+
+.affixClass .ant-statistic-content {
+    font-size: 16px;
+}
+
+.ant-list-item-meta-title {
+    margin: 0;
+}

@@ -1,9 +1,9 @@
-import Index from "./pages/index/index"
-
+import Router from "./router/index"
 function App() {
   return (
     <>
-      <Index/>
+      
+      <Router/>
     </>
   );
 }
