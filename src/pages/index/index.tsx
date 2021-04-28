@@ -109,32 +109,32 @@ const List: React.FC<listProps> = (props) => {
       pathname: `/list/${props.cartoonId}/${props.title}`,
     });
   }
-  return (
-    <Card
-      hoverable
-      style={{ width: "100%" }}
-      onClick={handleClick}
-      cover={
-        <img
-          alt="example"
-          src="https://os.alipayobjects.com/rmsportal/QBnOOoLaAfKPirc.png"
-        />
-      }
-    >
-      {/* <Meta title="Europe Street beat" description="www.instagram.com" /> */}
-      <Meta title={props.title} description={props.descs} />
-    </Card>
-  );
-
   // return (
   //   <Card
   //     hoverable
   //     style={{ width: "100%" }}
-  //     cover={<img alt="example" src={props.cover as string} />}
+  //     onClick={handleClick}
+  //     cover={
+  //       <img
+  //         alt="example"
+  //         src="https://os.alipayobjects.com/rmsportal/QBnOOoLaAfKPirc.png"
+  //       />
+  //     }
   //   >
-  //     <Meta title={props.title} description={props.descs} />
+  //     <Meta title="Europe Street beat" description="www.instagram.com" />
   //   </Card>
   // );
+
+  return (
+    <Card
+      hoverable
+      onClick={handleClick}
+      style={{ width: "100%" }}
+      cover={<img alt="example" src={props.cover as string} />}
+    >
+      <Meta title={props.title} description={props.descs} />
+    </Card>
+  );
 };
 //类型推断
 /* <类型>值
