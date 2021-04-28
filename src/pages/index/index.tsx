@@ -1,9 +1,10 @@
-import React, { Component, useState, useEffect } from "react";
+import React, { Component, useState, useEffect, useRef } from "react";
 import { Space, Input, Pagination, Row, Col, Card } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 
 import { searchApi } from "./../../api/api.js";
+import { debug } from "node:console";
 
 const { Search } = Input;
 
@@ -22,7 +23,15 @@ const SearchCom: React.FC<searchProps> = (props) => {
   const [pageIndex, setPageIndex] = useState<number>(1);
   const [pageSize] = useState<number>(12);
   const { changeList } = props;
+
   useEffect(() => {
+    getData();
+  }, []);
+  /**
+   * 初始化执行回调
+   * searchKey 第一次 更新会走这个方法（回显）
+   */
+  const getData = () => {
     searchApi({
       key: searchKey,
       from: pageIndex,
@@ -35,17 +44,21 @@ const SearchCom: React.FC<searchProps> = (props) => {
       setTotal(count);
       changeList(data);
     });
-  }, [pageIndex, searchKey]);
+  };
+  const oninputChange = (event: any) => {
+    setKey(event.target.value);
+  };
   return (
     <>
       <Search
-        placeholder="input search text"
+        placeholder="请输入查询条件"
         allowClear
         style={{ width: 300 }}
+        value={searchKey as any}
         enterButton="Search"
-        onSearch={(val: String) => {
-          console.log(val);
-          setKey(val);
+        onInput={oninputChange}
+        onSearch={() => {
+          getData();
         }}
       />
       <div className="content">{props.children}</div>
@@ -57,6 +70,7 @@ const SearchCom: React.FC<searchProps> = (props) => {
         defaultCurrent={pageIndex}
         onChange={(page) => {
           setPageIndex(page);
+          getData();
         }}
       />
     </>

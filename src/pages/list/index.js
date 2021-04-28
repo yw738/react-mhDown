@@ -1,7 +1,6 @@
 import React, {
   Component,
   useState,
-  useEffect,
   useImperativeHandle,
 } from "react";
 import {
@@ -13,12 +12,12 @@ import {
   Col,
   Checkbox,
   BackTop,
-  Tooltip,
   Statistic,
   message,
   Drawer,
   Image,
   Spin,
+  Popconfirm,
 } from "antd";
 import "./index.css";
 import {
@@ -28,6 +27,24 @@ import {
   downLoadAllApi,
 } from "./../../api/api.js";
 import { DownloadOutlined } from "@ant-design/icons";
+
+function throttle(fn, delay = 3000) {
+  let valid = true;
+  return function () {
+    if (!valid) {
+      //节流
+      message.warning("不要点击的太佩服！");
+      return false;
+    }
+    // 工作时间，执行函数并且在间隔期内把状态位设为无效
+    valid = false;
+    console.log(arguments);
+    fn(...arguments);
+    setTimeout(() => {
+      valid = true;
+    }, delay);
+  };
+}
 
 const style = {
   height: 40,
@@ -114,8 +131,16 @@ class DataListCom extends Component {
     checkedArr: [],
     loading: false,
     allDownLoading: false,
+    aDownThrottle: null,
   };
   childRef = React.createRef();
+  UNSAFE_componentWillMount() {
+    // 节流防抖设置
+    // 为了使throttle形成闭包，只调用一次throttle，之后由其引用throttleFn来调用
+    this.setState({
+      aDownThrottle: throttle(this.aDown),
+    });
+  }
 
   componentDidMount() {
     let { id, title } = this.props.match.params;
@@ -181,8 +206,12 @@ class DataListCom extends Component {
       id: item.chapterId,
       title: this.state.title,
       zj_tit: item.title,
-    }).then(() => {
-      message.success("已开始下载！！！");
+    }).then((res) => {
+      if (res.code === 200) {
+        message.success("已开始下载！！！");
+      } else {
+        message.error(res.massage);
+      }
     });
   };
   /**
@@ -214,9 +243,8 @@ class DataListCom extends Component {
   detail = (item) => {
     this.childRef.current.getValue(item);
   };
-  openDetail = () => {};
   render() {
-    let { checkedArr, allDownLoading } = this.state;
+    let { checkedArr, allDownLoading, aDownThrottle } = this.state;
     return (
       <div>
         <PageHeader
@@ -224,23 +252,28 @@ class DataListCom extends Component {
           onBack={() => this.props?.history?.goBack()}
           title={this.state.title}
         />
-        <DrawerCom aDown={this.aDown} childRef={this.childRef} />
+        <DrawerCom aDown={aDownThrottle} childRef={this.childRef} />
         <BackTop>
           <div style={style}>UP</div>
         </BackTop>
         <div className="affixClass">
           <Checkbox onChange={this.onAllChange}>全选</Checkbox>
           <Statistic value={checkedArr.length} prefix={"已选中"} />
-          {/* <Tooltip placement="bottom" title={"批量下载"}> */}
-          <Button
-            type="primary"
-            onClick={this.allDown}
-            icon={<DownloadOutlined />}
-            loading={allDownLoading}
+          <Popconfirm
+            title="确定批量下载吗?"
+            onConfirm={this.allDown}
+            onCancel={() => {}}
+            okText="Yes"
+            cancelText="No"
           >
-            批量下载
-          </Button>
-          {/* </Tooltip> */}
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              loading={allDownLoading}
+            >
+              批量下载
+            </Button>
+          </Popconfirm>
         </div>
         <div className="padding24">
           <Spin spinning={this.state.loading}>
@@ -277,7 +310,7 @@ class DataListCom extends Component {
                       <Space className="flexEnd">
                         <Button onClick={() => this.detail(item)}>查看</Button>
                         <Button
-                          onClick={() => this.aDown(item)}
+                          onClick={() => aDownThrottle(item)}
                           type="primary"
                           icon={<DownloadOutlined />}
                         />
