@@ -4,7 +4,6 @@ import "./index.css";
 import { useHistory } from "react-router-dom";
 
 import { searchApi } from "./../../api/api.js";
-import { debug } from "node:console";
 
 const { Search } = Input;
 
@@ -123,21 +122,6 @@ const List: React.FC<listProps> = (props) => {
       pathname: `/list/${props.cartoonId}/${props.title}`,
     });
   }
-  // return (
-  //   <Card
-  //     hoverable
-  //     style={{ width: "100%" }}
-  //     onClick={handleClick}
-  //     cover={
-  //       <img
-  //         alt="example"
-  //         src="https://os.alipayobjects.com/rmsportal/QBnOOoLaAfKPirc.png"
-  //       />
-  //     }
-  //   >
-  //     <Meta title="Europe Street beat" description="www.instagram.com" />
-  //   </Card>
-  // );
 
   return (
     <Card

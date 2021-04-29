@@ -5,7 +5,7 @@ if (process.env.NODE_ENV === "development") {
 } else if (process.env.NODE_ENV === "test") {
   axios.defaults.baseURL = "http://test998/";
 } else if (process.env.NODE_ENV === "production") {
-  axios.defaults.baseURL = "http://api.pingcc.cn/";
+  axios.defaults.baseURL = "http://localhost/";
 } else if (process.env.NODE_ENV === "build") {
   axios.defaults.baseURL = "http://build/demo";
 }

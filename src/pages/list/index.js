@@ -2,7 +2,10 @@ import React, {
   Component,
   useState,
   useImperativeHandle,
+  useEffect,
 } from "react";
+import { useHistory } from "react-router-dom";
+
 import {
   PageHeader,
   List,
@@ -18,6 +21,9 @@ import {
   Image,
   Spin,
   Popconfirm,
+  Progress,
+  Typography,
+  Modal,
 } from "antd";
 import "./index.css";
 import {
@@ -38,14 +44,13 @@ function throttle(fn, delay = 3000) {
     }
     // 工作时间，执行函数并且在间隔期内把状态位设为无效
     valid = false;
-    console.log(arguments);
     fn(...arguments);
     setTimeout(() => {
       valid = true;
     }, delay);
   };
 }
-
+let dataArr = [];
 const style = {
   height: 40,
   width: 40,
@@ -57,9 +62,9 @@ const style = {
   fontSize: 14,
 };
 // 弹框
-const DrawerCom = ({ childRef, aDown }) => {
+const DrawerCom = ({ childRef, aDown, isNowDown }) => {
   const [visible, setVisible] = useState(false);
-  const [title, setTitle] = useState("详情");
+  const [title, setTitle] = useState("");
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [params, setParams] = useState({});
@@ -100,6 +105,7 @@ const DrawerCom = ({ childRef, aDown }) => {
           >
             <Button
               onClick={() => aDown(params)}
+              disabled={isNowDown}
               type="primary"
               icon={<DownloadOutlined />}
             >
@@ -123,6 +129,91 @@ const DrawerCom = ({ childRef, aDown }) => {
   );
 };
 
+/**
+ * 进度弹框
+ */
+const DrawerProgress = ({ childRef, setDownStatus }) => {
+  const [visible, setVisible] = useState(false);
+  const [list, setList] = useState([]);
+  const [progressNum, setProgressNum] = useState(0);
+  const history = useHistory();
+  useImperativeHandle(childRef, () => ({
+    getValue: (item) => showDrawer(item),
+  }));
+  useEffect(() => {
+    //  // 打开一个 web socket  这里端口号和上面监听的需一致
+    var ws = new WebSocket("ws://localhost:8888/");
+    ws.onopen = function () {
+      // Web Socket 已连接上，使用 send() 方法发送数据
+      console.log("已连接...");
+    };
+    ws.onmessage = function (evt) {
+      let { data } = evt;
+      let item = JSON.parse(data);
+      if (item.message) {
+        message.success(item.message);
+        dataArr = [];
+        setDownStatus();
+        setList([]);
+        // setProgressNum(0);
+      } else {
+        setProgressNum(Number(item.progress));
+        dataArr.unshift(`总页数：${item.allPage} , 已下载：${item.downPage} `);
+        setList(dataArr);
+        // console.log(
+        //   `当前下载进度：${item.progress}%, 总页数：${item.allPage} , 已下载：${item.downPage} `
+        // );
+      }
+    };
+
+    ws.onclose = function () {
+      // 关闭 websocket
+      console.log("连接已关闭...");
+      // message.error("连接已关闭...");
+      Modal.error({
+        title: '连接已关闭',
+        content: `服务过载，崩掉了。请重启服务！！`,
+      })
+      history.push({
+        pathname: `/error`,
+      });
+    };
+
+  }, []);
+  const showDrawer = (item) => {
+    setVisible(true);
+  };
+  const onClose = () => {
+    setVisible(false);
+  };
+  return (
+    <>
+      <Drawer
+        title="下载进度"
+        placement="right"
+        width={(window.innerWidth / 4) * 3}
+        closable={false}
+        onClose={onClose}
+        visible={visible}
+      >
+        <div className="progressBox">
+          <Progress type="circle" percent={progressNum} />
+        </div>
+
+        <List
+          className="progressList"
+          itemLayout="horizontal"
+          dataSource={list}
+          renderItem={(item) => (
+            <List.Item>
+              <Typography.Text mark>{item}</Typography.Text>
+            </List.Item>
+          )}
+        />
+      </Drawer>
+    </>
+  );
+};
 class DataListCom extends Component {
   state = {
     title: "Title",
@@ -132,8 +223,15 @@ class DataListCom extends Component {
     loading: false,
     allDownLoading: false,
     aDownThrottle: null,
+    isAllChecked: false,
+    /**
+     * 一次只能有一个下载任务（一个线程）否则，系统会崩
+     */
+    isNowDown: false, //现在是否有下载任务
   };
   childRef = React.createRef();
+  childProgressRef = React.createRef();
+
   UNSAFE_componentWillMount() {
     // 节流防抖设置
     // 为了使throttle形成闭包，只调用一次throttle，之后由其引用throttleFn来调用
@@ -164,7 +262,6 @@ class DataListCom extends Component {
    * 多选框，勾选
    */
   onChange = (e, item, i) => {
-    // console.log(`checked = ${e.target.checked}`);
     let { data } = this.state;
     data[i].checked = e.target.checked;
     this.setState({
@@ -182,7 +279,6 @@ class DataListCom extends Component {
    */
   onAllChange = (e) => {
     let checked = e.target.checked;
-    // console.log(`checked = ${e.target.checked}`);
     let { data } = this.state;
     data = data.map((item) => ({
       ...item,
@@ -196,6 +292,7 @@ class DataListCom extends Component {
           id: item.chapterId,
           title: item.title,
         })),
+      isAllChecked: checked,
     });
   };
   /**
@@ -209,6 +306,9 @@ class DataListCom extends Component {
     }).then((res) => {
       if (res.code === 200) {
         message.success("已开始下载！！！");
+        this.setState({
+          isNowDown: true,
+        });
       } else {
         message.error(res.massage);
       }
@@ -237,31 +337,71 @@ class DataListCom extends Component {
           checked: false,
         })),
         allDownLoading: false,
+        isNowDown: true,
+        checkedArr: [],
+        isAllChecked: false,
       });
     });
   };
   detail = (item) => {
     this.childRef.current.getValue(item);
   };
+  /**
+   * 查看进度
+   */
+  getProgress = () => {
+    this.childProgressRef.current.getValue();
+  };
   render() {
-    let { checkedArr, allDownLoading, aDownThrottle } = this.state;
+    let {
+      checkedArr,
+      allDownLoading,
+      aDownThrottle,
+      isAllChecked,
+      isNowDown,
+    } = this.state;
     return (
       <div>
         <PageHeader
           className="site-page-header"
           onBack={() => this.props?.history?.goBack()}
           title={this.state.title}
+          extra={[
+            <Button
+              key={"1"}
+              // disabled={!isNowDown}
+              onClick={this.getProgress}
+              type="primary"
+            >
+              查看下载进度
+            </Button>,
+          ]}
         />
-        <DrawerCom aDown={aDownThrottle} childRef={this.childRef} />
+        <DrawerCom
+          isNowDown={isNowDown}
+          aDown={aDownThrottle}
+          childRef={this.childRef}
+        />
+        <DrawerProgress
+          setDownStatus={() => {
+            this.setState({
+              isNowDown: false,
+            });
+          }}
+          childRef={this.childProgressRef}
+        />
         <BackTop>
           <div style={style}>UP</div>
         </BackTop>
         <div className="affixClass">
-          <Checkbox onChange={this.onAllChange}>全选</Checkbox>
+          <Checkbox checked={isAllChecked} onChange={this.onAllChange}>
+            全选
+          </Checkbox>
           <Statistic value={checkedArr.length} prefix={"已选中"} />
           <Popconfirm
             title="确定批量下载吗?"
             onConfirm={this.allDown}
+            disabled={isNowDown}
             onCancel={() => {}}
             okText="Yes"
             cancelText="No"
@@ -269,6 +409,7 @@ class DataListCom extends Component {
             <Button
               type="primary"
               icon={<DownloadOutlined />}
+              disabled={isNowDown}
               loading={allDownLoading}
             >
               批量下载
@@ -311,6 +452,7 @@ class DataListCom extends Component {
                         <Button onClick={() => this.detail(item)}>查看</Button>
                         <Button
                           onClick={() => aDownThrottle(item)}
+                          disabled={isNowDown}
                           type="primary"
                           icon={<DownloadOutlined />}
                         />

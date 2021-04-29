@@ -26,3 +26,13 @@
 .ant-list-item-meta-title {
     margin: 0;
 }
+
+.progressBox {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.progressList {
+    height: calc(100% - 150px);
+    overflow-y: auto;
+}
