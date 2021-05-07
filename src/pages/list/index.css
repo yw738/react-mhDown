@@ -36,3 +36,13 @@
     height: calc(100% - 150px);
     overflow-y: auto;
 }
+
+.ant-list-item-meta-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.tipsBox {
+    margin-top: 30px;
+}

@@ -24,6 +24,7 @@ import {
   Progress,
   Typography,
   Modal,
+  Card,
 } from "antd";
 import "./index.css";
 import {
@@ -39,7 +40,7 @@ function throttle(fn, delay = 3000) {
   return function () {
     if (!valid) {
       //节流
-      message.warning("不要点击的太佩服！");
+      message.warning("不要点击的太频繁！");
       return false;
     }
     // 工作时间，执行函数并且在间隔期内把状态位设为无效
@@ -50,7 +51,6 @@ function throttle(fn, delay = 3000) {
     }, delay);
   };
 }
-let dataArr = [];
 const style = {
   height: 40,
   width: 40,
@@ -61,7 +61,7 @@ const style = {
   textAlign: "center",
   fontSize: 14,
 };
-// 弹框
+// 详情弹框
 const DrawerCom = ({ childRef, aDown, isNowDown }) => {
   const [visible, setVisible] = useState(false);
   const [title, setTitle] = useState("");
@@ -130,13 +130,14 @@ const DrawerCom = ({ childRef, aDown, isNowDown }) => {
 };
 
 /**
- * 进度弹框
+ * 下载进度弹框
  */
 const DrawerProgress = ({ childRef, setDownStatus }) => {
   const [visible, setVisible] = useState(false);
-  const [list, setList] = useState([]);
+  const [listData, setList] = useState({});
   const [progressNum, setProgressNum] = useState(0);
   const history = useHistory();
+  //打开弹框的方法
   useImperativeHandle(childRef, () => ({
     getValue: (item) => showDrawer(item),
   }));
@@ -152,14 +153,17 @@ const DrawerProgress = ({ childRef, setDownStatus }) => {
       let item = JSON.parse(data);
       if (item.message) {
         message.success(item.message);
-        dataArr = [];
         setDownStatus();
-        setList([]);
+        setList({});
         // setProgressNum(0);
       } else {
         setProgressNum(Number(item.progress));
-        dataArr.unshift(`总页数：${item.allPage} , 已下载：${item.downPage} `);
-        setList(dataArr);
+        setDownStatus(true);
+        setList({
+          allPage: item.allPage,
+          downPage: item.downPage,
+          progress: item.progress
+        });
         // console.log(
         //   `当前下载进度：${item.progress}%, 总页数：${item.allPage} , 已下载：${item.downPage} `
         // );
@@ -171,14 +175,13 @@ const DrawerProgress = ({ childRef, setDownStatus }) => {
       console.log("连接已关闭...");
       // message.error("连接已关闭...");
       Modal.error({
-        title: '连接已关闭',
+        title: "连接已关闭",
         content: `服务过载，崩掉了。请重启服务！！`,
-      })
+      });
       history.push({
         pathname: `/error`,
       });
     };
-
   }, []);
   const showDrawer = (item) => {
     setVisible(true);
@@ -200,16 +203,27 @@ const DrawerProgress = ({ childRef, setDownStatus }) => {
           <Progress type="circle" percent={progressNum} />
         </div>
 
-        <List
-          className="progressList"
-          itemLayout="horizontal"
-          dataSource={list}
-          renderItem={(item) => (
-            <List.Item>
-              <Typography.Text mark>{item}</Typography.Text>
-            </List.Item>
-          )}
-        />
+        <Row gutter={16}>
+          <Col span={8}>
+            <Card title="总页数" >
+              {listData.allPage||0}
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card title="已下载" >
+              {listData.downPage||0}
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card title="下载进度" >
+              {listData.progress||0}%
+            </Card>
+          </Col>
+        </Row>
+
+        <div className="tipsBox">
+          tips：一次只能下载一个任务，请耐心等待下载完成！
+        </div>
       </Drawer>
     </>
   );
@@ -383,9 +397,9 @@ class DataListCom extends Component {
           childRef={this.childRef}
         />
         <DrawerProgress
-          setDownStatus={() => {
+          setDownStatus={(boolean = false) => {
             this.setState({
-              isNowDown: false,
+              isNowDown: boolean,
             });
           }}
           childRef={this.childProgressRef}
@@ -394,7 +408,11 @@ class DataListCom extends Component {
           <div style={style}>UP</div>
         </BackTop>
         <div className="affixClass">
-          <Checkbox checked={isAllChecked} onChange={this.onAllChange}>
+          <Checkbox
+            checked={isAllChecked}
+            disabled={isNowDown}
+            onChange={this.onAllChange}
+          >
             全选
           </Checkbox>
           <Statistic value={checkedArr.length} prefix={"已选中"} />
@@ -441,6 +459,7 @@ class DataListCom extends Component {
                         onChange={(e) => this.onChange(e, item, index)}
                         indeterminate={false}
                         checked={item.checked}
+                        disabled={isNowDown}
                       />
                     </Col>
 

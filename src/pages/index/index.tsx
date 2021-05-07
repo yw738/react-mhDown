@@ -7,7 +7,8 @@ import {
   Col,
   Card,
   message,
-  Result,
+  Empty,
+  Spin,
 } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
@@ -29,6 +30,7 @@ const SearchCom: React.FC<searchProps> = (props) => {
   const [searchKey, setKey] = useState<String>("");
   const [total, setTotal] = useState<number>(0);
   const [pageIndex, setPageIndex] = useState<number>(1);
+  const [loading, setLoading] = useState<Boolean>(false);
   const [pageSize] = useState<number>(8);
   const { changeList } = props;
 
@@ -40,18 +42,24 @@ const SearchCom: React.FC<searchProps> = (props) => {
    * searchKey 第一次 更新会走这个方法（回显）
    */
   const getData = () => {
+    setLoading(true);
     searchApi({
       key: searchKey,
       from: pageIndex,
       size: pageSize,
-    }).then((res: any) => {
-      const { count, data } = res.data || {
-        count: 0,
-        data: [],
-      };
-      setTotal(count);
-      changeList(data);
-    });
+    })
+      .then((res: any) => {
+        const { count, data } = res.data || {
+          count: 0,
+          data: [],
+        };
+        setTotal(count);
+        changeList(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
   };
   const oninputChange = (event: any) => {
     setKey(event.target.value);
@@ -72,11 +80,14 @@ const SearchCom: React.FC<searchProps> = (props) => {
         }}
         onChange={oninputChange}
       />
-      {total == 0 ? (
-        <Result title="暂无数据" />
-      ) : (
-        <div className="content">{props.children}</div>
-      )}
+
+      <Spin delay={500} spinning={loading as any}>
+        {total === 0 ? (
+          <Empty/>
+        ) : (
+          <div className="content">{props.children}</div>
+        )}
+      </Spin>
       <Pagination
         className="textAlignR"
         total={total}
