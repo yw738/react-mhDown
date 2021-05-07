@@ -1,5 +1,14 @@
 import React, { Component, useState, useEffect, useRef } from "react";
-import { Space, Input, Pagination, Row, Col, Card } from "antd";
+import {
+  Space,
+  Input,
+  Pagination,
+  Row,
+  Col,
+  Card,
+  message,
+  Result,
+} from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 
@@ -20,7 +29,7 @@ const SearchCom: React.FC<searchProps> = (props) => {
   const [searchKey, setKey] = useState<String>("");
   const [total, setTotal] = useState<number>(0);
   const [pageIndex, setPageIndex] = useState<number>(1);
-  const [pageSize] = useState<number>(12);
+  const [pageSize] = useState<number>(8);
   const { changeList } = props;
 
   useEffect(() => {
@@ -56,16 +65,23 @@ const SearchCom: React.FC<searchProps> = (props) => {
         value={searchKey as any}
         enterButton="Search"
         onInput={oninputChange}
-        onSearch={() => {
-          getData();
+        onSearch={(value) => {
+          if (value === searchKey) {
+            getData();
+          }
         }}
+        onChange={oninputChange}
       />
-      <div className="content">{props.children}</div>
+      {total == 0 ? (
+        <Result title="暂无数据" />
+      ) : (
+        <div className="content">{props.children}</div>
+      )}
       <Pagination
         className="textAlignR"
         total={total}
-        showTotal={(total) => `总共 ${total} 本`}
-        defaultPageSize={pageSize}
+        hideOnSinglePage={true}
+        showSizeChanger={false}
         defaultCurrent={pageIndex}
         onChange={(page) => {
           setPageIndex(page);
@@ -83,11 +99,11 @@ const ContentBox: React.FC<contentProps> = (props) => {
   const { dataList } = props;
   // console.log(dataList);
   let listProp = {
-    xs: 12,
-    sm: 8,
+    xs: 8,
+    sm: 6,
     md: 6,
     lg: 6,
-    xl: 4,
+    xl: 3,
   };
   return (
     <Space>
